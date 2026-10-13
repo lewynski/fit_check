@@ -1,0 +1,854 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Fit Check</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=DM+Sans:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: fitting-room. A sticky mannequin stage with a woven care-label score card on the left, garment pickers and stylist notes on the right. On phones the stage collapses into a sticky strip so the score stays visible while picking. */
+:root{
+  --bg:#E7EAE3; --surface:#F5F6F1; --stage:#D8DDD3; --ink:#15201B; --muted:#55625B; --line:#C3CABF;
+  --accent:#F2C230; --accent-ink:#15201B;
+  --good:#1F7A4D; --mid:#9A6508; --bad:#B3341F;
+  --outline:rgba(21,32,27,.38); --tick:rgba(21,32,27,.4);
+  --display:'Big Shoulders Display','Arial Narrow',Impact,sans-serif;
+  --body:'DM Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:'DM Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#101412; --surface:#1A201D; --stage:#222A26; --ink:#E9EDE6; --muted:#9AA79F; --line:#2E3833;
+    --accent:#F2C94C; --accent-ink:#101412;
+    --good:#5CC48B; --mid:#E3A93B; --bad:#EE7A63;
+    --outline:rgba(233,237,230,.4); --tick:rgba(233,237,230,.35);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#101412; --surface:#1A201D; --stage:#222A26; --ink:#E9EDE6; --muted:#9AA79F; --line:#2E3833;
+  --accent:#F2C94C; --accent-ink:#101412;
+  --good:#5CC48B; --mid:#E3A93B; --bad:#EE7A63;
+  --outline:rgba(233,237,230,.4); --tick:rgba(233,237,230,.35);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
+.mono{font-family:var(--mono);letter-spacing:.04em}
+button{font:inherit;color:inherit}
+button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+.wrap{max-width:1080px;margin:0 auto;padding-inline:16px;padding-block:24px 48px}
+.top{display:flex;flex-direction:column;gap:4px;margin-bottom:22px}
+.top h1{font:800 clamp(44px,9vw,76px)/.9 var(--display);text-transform:uppercase;letter-spacing:.01em;margin:0}
+.top p{margin:0;color:var(--muted);max-width:52ch}
+
+.app{display:grid;grid-template-columns:minmax(0,370px) minmax(0,1fr);gap:32px;align-items:start}
+.stage{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px);align-self:start}
+.stage-inner{display:flex;flex-direction:column;gap:12px}
+
+.fig{position:relative;background:var(--stage);border-radius:4px;display:flex;justify-content:center;padding:14px 14px 10px 34px;min-width:0}
+.ruler{position:absolute;left:10px;top:14px;bottom:10px;width:14px;
+  background-image:repeating-linear-gradient(to bottom,var(--tick) 0 1px,transparent 1px 8px),repeating-linear-gradient(to bottom,var(--tick) 0 1px,transparent 1px 40px);
+  background-size:7px 100%,14px 100%;background-repeat:no-repeat}
+#fig{width:100%;max-width:270px;height:auto;display:block}
+svg .ol{stroke:var(--outline);stroke-width:1.2;stroke-linejoin:round}
+svg .num{font-family:var(--display);font-weight:800}
+
+.label{background:var(--surface);padding:14px 16px 16px;position:relative;border-radius:2px;min-width:0}
+.label::before{content:"";position:absolute;inset:4px;border:1px dashed var(--line);pointer-events:none;border-radius:1px}
+.label-head{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted)}
+.grade{font:500 12px var(--mono);border:1px solid currentColor;padding:1px 8px;border-radius:2px}
+.score{display:flex;align-items:baseline;gap:6px;margin-top:2px}
+#scoreNum{font:800 76px/1 var(--display);font-variant-numeric:tabular-nums}
+.of{color:var(--muted);font-size:14px}
+.meter{position:relative;height:10px;background:var(--stage);margin:6px 0 10px;border-radius:1px;overflow:hidden}
+.meter i{position:absolute;inset:0 auto 0 0;width:0;background:var(--good)}
+.meter::after{content:"";position:absolute;inset:0;background-image:repeating-linear-gradient(to right,var(--surface) 0 1px,transparent 1px 10%)}
+@media (prefers-reduced-motion:no-preference){.meter i{transition:width .45s ease,background-color .3s}}
+.label h2{font:800 30px/1 var(--display);text-transform:uppercase;margin:0 0 6px;letter-spacing:.02em}
+.quip{margin:0 0 10px;color:var(--muted);font-size:14px}
+.subs{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px;font-size:12px}
+.subs span{border:1px solid var(--line);padding:2px 8px;border-radius:2px;font-variant-numeric:tabular-nums}
+.subs b{font-weight:500;color:var(--muted);text-transform:uppercase;margin-right:4px}
+.comp{margin:0;display:grid;gap:3px;font-size:12px;border-top:1px solid var(--line);padding-top:10px}
+.comp div{display:grid;grid-template-columns:70px minmax(0,1fr);gap:8px}
+.comp dt{color:var(--muted);text-transform:uppercase}
+.comp dd{margin:0;overflow-wrap:anywhere}
+.tier-good{color:var(--good)} .tier-mid{color:var(--mid)} .tier-bad{color:var(--bad)}
+
+.panel{min-width:0}
+.setup{display:flex;flex-direction:column;gap:10px;padding-bottom:16px}
+.setup-row{display:grid;grid-template-columns:84px minmax(0,1fr);gap:10px;align-items:center}
+.lbl{font-size:12px;color:var(--muted);text-transform:uppercase}
+
+.slot{border-top:1px solid var(--line);padding-block:14px 16px;display:flex;flex-direction:column;gap:12px}
+.slot-head{display:flex;justify-content:space-between;gap:12px;align-items:baseline}
+.slot-head h3{margin:0;font:800 22px/1 var(--display);text-transform:uppercase;letter-spacing:.04em}
+.slot-head span{font-size:12px;color:var(--muted);text-align:right;overflow-wrap:anywhere}
+.slot-body{display:flex;flex-direction:column;gap:12px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{padding:7px 12px;min-height:36px;border:1px solid var(--line);background:var(--surface);border-radius:4px;cursor:pointer;font-weight:500;font-size:14px}
+.chip:hover{border-color:var(--ink)}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.swatches{display:flex;flex-wrap:wrap;gap:8px}
+.swatch{width:30px;height:30px;border-radius:50%;border:1px solid var(--outline);cursor:pointer;padding:0}
+.swatch[aria-pressed="true"]{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--ink)}
+
+.actions{border-top:1px solid var(--line);padding-block:16px;display:flex;flex-direction:column;gap:12px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{padding:9px 16px;min-height:40px;border-radius:4px;border:1px solid var(--ink);background:transparent;font-weight:700;cursor:pointer}
+.btn:hover{background:var(--surface)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.primary:hover{filter:brightness(.95);background:var(--accent)}
+#swapMsg{margin:0;font-size:14px;min-height:21px;color:var(--muted)}
+
+.notes{border-top:1px solid var(--line);padding-top:16px}
+.notes h3,.book h3{margin:0 0 10px;font:800 22px/1 var(--display);text-transform:uppercase;letter-spacing:.04em}
+.notes ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.notes li{display:grid;grid-template-columns:44px minmax(0,1fr);gap:10px;align-items:baseline}
+.pts{font:500 13px var(--mono);text-align:right}
+.pts.good{color:var(--good)} .pts.bad{color:var(--bad)}
+
+.book{border-top:1px solid var(--line);padding-top:16px;margin-top:20px}
+.book-empty{margin:0;color:var(--muted);font-size:14px}
+.looks{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px}
+.look{position:relative;min-width:0}
+.look-load{width:100%;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 4px 6px;background:var(--stage);border:1px solid var(--line);border-radius:4px;cursor:pointer}
+.look-load:hover{border-color:var(--ink)}
+.look-load svg{height:104px;width:auto;max-width:100%;display:block}
+.look-load span{font:500 12px var(--mono)}
+.look-del{position:absolute;top:2px;right:2px;width:26px;height:26px;border:0;border-radius:50%;background:var(--surface);cursor:pointer;line-height:1;font-size:16px;color:var(--muted)}
+.look-del:hover{color:var(--ink)}
+
+.skins{border-top:1px solid var(--line);padding-top:14px;margin-top:20px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+
+@media (max-width:760px){
+  .app{grid-template-columns:minmax(0,1fr);gap:16px}
+  .stage{top:env(safe-area-inset-top,0px);margin-inline:-16px;padding:8px 16px;background:var(--bg);border-bottom:1px solid var(--line);z-index:5}
+  .stage-inner{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:stretch}
+  .fig{padding:8px 8px 6px 22px}
+  .ruler{left:6px;top:8px;bottom:6px}
+  #fig{width:auto;height:184px}
+  .quip,.comp,.subs{display:none}
+  #scoreNum{font-size:56px}
+  .label h2{font-size:24px;margin-bottom:0}
+  .meter{margin-block:4px 8px}
+  .setup-row{grid-template-columns:minmax(0,1fr);gap:6px}
+}
+</style>
+
+<style>body{margin:0}</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Fit Check</h1>
+    <p>Choose men's or women's, pick the occasion, then build the outfit. You get a score and the reasons behind it.</p>
+  </header>
+
+  <main class="app">
+    <aside class="stage" aria-label="Outfit preview and score">
+      <div class="stage-inner">
+        <div class="fig">
+          <div class="ruler" aria-hidden="true"></div>
+          <svg id="fig" viewBox="0 0 240 400" role="img" aria-label="Preview of your outfit"></svg>
+        </div>
+        <div class="label" aria-live="polite">
+          <div class="label-head mono"><span>FIT SCORE</span><span id="grade" class="grade">GRADE A</span></div>
+          <div class="score"><span id="scoreNum">0</span><span class="of mono">/100</span></div>
+          <div class="meter"><i id="meterFill"></i></div>
+          <h2 id="verdict">Verdict</h2>
+          <p id="quip" class="quip"></p>
+          <div class="subs mono" id="subs"></div>
+          <dl class="comp mono" id="comp"></dl>
+        </div>
+      </div>
+    </aside>
+
+    <section class="panel">
+      <div class="setup">
+        <div class="setup-row"><span class="lbl mono">Style for</span><div class="chips" id="genderChips"></div></div>
+        <div class="setup-row"><span class="lbl mono">Occasion</span><div class="chips" id="occChips"></div></div>
+      </div>
+
+      <div id="slots"></div>
+
+      <div class="actions">
+        <div class="row">
+          <button class="btn primary" id="suggestBtn" type="button">Suggest a swap</button>
+          <button class="btn" id="randomBtn" type="button">Random fit</button>
+          <button class="btn" id="saveBtn" type="button">Save this fit</button>
+        </div>
+        <p id="swapMsg" aria-live="polite"></p>
+        <div class="row" id="presets"></div>
+      </div>
+
+      <div class="notes">
+        <h3>Stylist notes</h3>
+        <ul id="notes"></ul>
+      </div>
+
+      <div class="book">
+        <h3>Lookbook</h3>
+        <p class="book-empty" id="bookEmpty">Fits you save show up here. They stay in this browser.</p>
+        <div class="looks" id="looks"></div>
+      </div>
+
+      <div class="skins"><span class="lbl mono">Skin tone</span><div class="swatches" id="skins"></div></div>
+    </section>
+  </main>
+</div>
+
+<script>
+(function(){
+  /* ---------- data ---------- */
+  var COLORS=[
+    {id:'black',name:'Black',hex:'#1c1c1e',t:'n'},
+    {id:'white',name:'White',hex:'#f5f4ef',t:'n'},
+    {id:'gray',name:'Gray',hex:'#8b8f94',t:'n'},
+    {id:'navy',name:'Navy',hex:'#22305a',t:'n'},
+    {id:'beige',name:'Beige',hex:'#d9c8a5',t:'n'},
+    {id:'denim',name:'Denim blue',hex:'#41648f',t:'n'},
+    {id:'brown',name:'Brown',hex:'#6a4a30',t:'e'},
+    {id:'olive',name:'Olive',hex:'#5f6b3b',t:'e'},
+    {id:'red',name:'Red',hex:'#c23b2a',t:'b'},
+    {id:'orange',name:'Orange',hex:'#e07b2d',t:'b'},
+    {id:'yellow',name:'Yellow',hex:'#e8b923',t:'b'},
+    {id:'green',name:'Green',hex:'#2f8f5b',t:'b'},
+    {id:'blue',name:'Bright blue',hex:'#2f6fd0',t:'b'},
+    {id:'purple',name:'Purple',hex:'#7c4db3',t:'b'},
+    {id:'pink',name:'Pink',hex:'#eb8fa8',t:'b'}
+  ];
+  function T(id,name,f,s,g){return {id:id,name:name,f:f,s:s,g:g||'mf'};}
+  var TOPS=[
+    T('tee','Plain tee',2,0), T('graphic','Graphic tee',1,0), T('polo','Polo',5,0), T('button','Button-up',7,0),
+    T('blouse','Blouse',6,0,'f'), T('sweater','Sweater',4,0), T('hoodie','Hoodie',1,.4), T('tank','Tank top',0,.4),
+    T('crop','Crop top',1,.2,'f'), T('jersey','Basketball jersey',0,1), T('blazer','Blazer',9,0), T('dress','Dress',6,0,'f')
+  ];
+  var BOTTOMS=[
+    T('jeans','Jeans',3,0), T('chinos','Chinos',6,0), T('slacks','Slacks',8,0), T('cargo','Cargo pants',2,0),
+    T('jogger','Joggers',1,1), T('leggings','Leggings',1,1,'f'), T('shorts','Shorts',2,0), T('bball','Athletic shorts',0,1),
+    T('miniskirt','Mini skirt',3,0,'f'), T('midiskirt','Midi skirt',6,0,'f')
+  ];
+  var SHOES=[
+    T('sneakers','Sneakers',3,.4), T('running','Running shoes',1,1), T('boots','Boots',5,0), T('loafers','Loafers',7,0),
+    T('oxfords','Dress shoes',9,0,'m'), T('heels','Heels',8,0,'f'), T('flats','Flats',6,0,'f'),
+    T('slides','Slides',0,.2), T('sandals','Sandals',1,0)
+  ];
+  var EXTRAS=[
+    {id:'none',name:'None'},{id:'cap',name:'Cap'},{id:'shades',name:'Sunglasses'},{id:'bag',name:'Shoulder bag'},{id:'watch',name:'Watch'}
+  ];
+  var SLOTS={
+    top:{label:'Top',items:TOPS},
+    bottom:{label:'Bottoms',items:BOTTOMS},
+    shoes:{label:'Shoes',items:SHOES},
+    extra:{label:'Accessory',items:EXTRAS}
+  };
+  var CORE=['top','bottom','shoes'], ALLK=['top','bottom','shoes','extra'];
+  var OCCS=[
+    {id:'casual',name:'Casual'},{id:'work',name:'Work'},{id:'date',name:'Date night'},{id:'party',name:'Party'},{id:'gym',name:'Gym'}
+  ];
+  var SKINS=['#f1c9a5','#e0a97d','#c68a5e','#9a6240','#6b4129'];
+  var PRESETS=[
+    {g:'m',name:'Mall run',occ:'casual',top:['graphic','black'],bottom:['jeans','denim'],shoes:['sneakers','white'],extra:['none','black']},
+    {g:'m',name:'Office day',occ:'work',top:['polo','navy'],bottom:['chinos','beige'],shoes:['loafers','brown'],extra:['watch','brown']},
+    {g:'m',name:'Date night',occ:'date',top:['button','white'],bottom:['chinos','navy'],shoes:['loafers','brown'],extra:['watch','brown']},
+    {g:'m',name:'Court day',occ:'gym',top:['jersey','red'],bottom:['bball','black'],shoes:['running','white'],extra:['none','black']},
+    {g:'m',name:'Chaos',occ:'party',top:['tank','purple'],bottom:['slacks','red'],shoes:['slides','yellow'],extra:['cap','green']},
+    {g:'f',name:'Brunch',occ:'casual',top:['blouse','pink'],bottom:['jeans','denim'],shoes:['flats','white'],extra:['bag','beige']},
+    {g:'f',name:'Office day',occ:'work',top:['blazer','black'],bottom:['slacks','gray'],shoes:['heels','black'],extra:['bag','black']},
+    {g:'f',name:'Date night',occ:'date',top:['dress','red'],bottom:['jeans','denim'],shoes:['heels','black'],extra:['bag','black']},
+    {g:'f',name:'Studio day',occ:'gym',top:['crop','black'],bottom:['leggings','gray'],shoes:['running','white'],extra:['none','black']},
+    {g:'f',name:'Chaos',occ:'party',top:['crop','yellow'],bottom:['midiskirt','red'],shoes:['boots','purple'],extra:['shades','pink']}
+  ];
+  var CLASH=[
+    ['red','green',12,'Red and green together read as a holiday costume.'],
+    ['red','pink',8,'Red and pink fight for attention.'],
+    ['red','orange',8,'Red and orange blur into one loud block.'],
+    ['orange','pink',8,'Orange and pink are too close in volume to pair.'],
+    ['purple','yellow',6,'Purple and yellow are a hard pair to balance.'],
+    ['navy','black',8,'Navy and black sit too close to look intentional.'],
+    ['brown','black',8,'Brown and black rarely work together.']
+  ];
+  var RANGES={casual:[0.5,5.5,'a casual day'],work:[5.5,9,'work'],date:[4,8,'date night'],party:[3,7.5,'a party']};
+
+  function byId(list,id){for(var i=0;i<list.length;i++){if(list[i].id===id)return list[i];}return list[0];}
+  function colorOf(id){return byId(COLORS,id);}
+  function avail(k,g){return SLOTS[k].items.filter(function(i){return !i.g||i.g.indexOf(g)>-1;});}
+  function clone(o){return JSON.parse(JSON.stringify(o));}
+
+  /* ---------- colour maths ---------- */
+  function hx(h){return [1,3,5].map(function(i){return parseInt(h.slice(i,i+2),16);});}
+  function toHex(a){return '#'+a.map(function(v){return Math.round(Math.max(0,Math.min(255,v))).toString(16).padStart(2,'0');}).join('');}
+  function mix(a,b,p){var x=hx(a),y=hx(b);return toHex(x.map(function(v,i){return v+(y[i]-v)*p;}));}
+  function lum(h){var c=hx(h).map(function(v){v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4);});return .2126*c[0]+.7152*c[1]+.0722*c[2];}
+  function shade(h,p){return lum(h)>.35?mix(h,'#000000',p):mix(h,'#ffffff',p);}
+  function contrastOf(h){return lum(h)>.35?'#1c1c1e':'#f5f4ef';}
+
+  /* ---------- the judge ---------- */
+  function judge(s){
+    var isDress=s.top.item==='dress';
+    var itT=byId(TOPS,s.top.item),itB=byId(BOTTOMS,s.bottom.item),itS=byId(SHOES,s.shoes.item);
+    var cT=colorOf(s.top.color),cB=colorOf(s.bottom.color),cS=colorOf(s.shoes.color);
+    var pieces=isDress?
+      [{k:'top',it:itT,c:cT},{k:'shoes',it:itS,c:cS}]:
+      [{k:'top',it:itT,c:cT},{k:'bottom',it:itB,c:cB},{k:'shoes',it:itS,c:cS}];
+    var score=44,notes=[];
+    function add(cat,p,t){score+=p;notes.push({cat:cat,pts:p,text:t});}
+
+    var fs=pieces.map(function(p){return p.it.f;});
+    var spread=Math.max.apply(null,fs)-Math.min.apply(null,fs);
+    var avgF=fs.reduce(function(a,b){return a+b;},0)/fs.length;
+    var maxF=Math.max.apply(null,fs);
+    var outlier=pieces[pieces.length-1];
+    if(pieces.length===3){
+      var median=fs.slice().sort(function(a,b){return a-b;})[1],od=-1;
+      pieces.forEach(function(p){var d=Math.abs(p.it.f-median);if(d>od){od=d;outlier=p;}});
+    }
+    var odd='The odd one out is the '+SLOTS[outlier.k].label.toLowerCase()+' ('+outlier.it.name.toLowerCase()+').';
+    if(spread<=2) add('style',12,'All the pieces sit at the same dress level.');
+    else if(spread<=4) add('style',5,'A mix of casual and dressy. It reads as smart casual.');
+    else if(spread<=6) add('style',-12,'The dress levels are far apart. '+odd);
+    else add('style',-24,'Formal and very casual pieces are fighting. '+odd);
+
+    var sporty=pieces.filter(function(p){return p.it.s>=.8;}).length;
+    if(s.occ!=='gym'){
+      if(sporty>=2&&spread<=4) add('style',8,'The sporty pieces work together, so the look feels committed.');
+      else if(sporty>=1&&maxF>=7) add('style',-8,'Athletic pieces next to dress pieces never quite sit right.');
+    }
+
+    var t=itT.id,b=isDress?'dress':itB.id,h=itS.id;
+    if(t==='tank'&&b==='slacks') add('style',-8,'A tank top with slacks looks unfinished.');
+    if(b==='shorts'&&h==='boots') add('style',-6,'Boots with shorts is a hard look to pull off.');
+    if(b==='jeans'&&h==='sneakers') add('style',6,'Jeans and sneakers is a classic pairing.');
+    if(b==='jeans'&&h==='boots') add('style',4,'Jeans and boots is a dependable pairing.');
+    if(b==='chinos'&&h==='loafers') add('style',6,'Chinos and loafers is a smart, easy pairing.');
+    if(b==='chinos'&&h==='sneakers') add('style',4,'Chinos with sneakers keeps things relaxed but neat.');
+    if((t==='polo'||t==='button')&&b==='chinos') add('style',4,'A collar with chinos looks put together.');
+    if(t==='blazer'&&b==='jeans') add('style',6,'A blazer with jeans is the classic smart-casual move.');
+    if(t==='blazer'&&(b==='shorts'||b==='bball'||b==='jogger')) add('style',-8,'A blazer with shorts or joggers does not work.');
+    if(t==='sweater'&&b==='jeans') add('style',4,'A sweater with jeans is an easy, reliable pairing.');
+    if(t==='blouse'&&(b==='slacks'||b==='midiskirt')) add('style',4,'A blouse with slacks or a midi skirt looks polished.');
+    if(b==='miniskirt'&&h==='boots') add('style',4,'A mini skirt with boots balances short and heavy.');
+    if(b==='midiskirt'&&h==='heels') add('style',4,'A midi skirt with heels elongates the leg.');
+    if(b==='dress'&&h==='sneakers') add('style',6,'A dress with sneakers is an easy, relaxed pairing.');
+    if(b==='dress'&&(h==='heels'||h==='boots')) add('style',4,'A dress with heels or boots is a safe choice.');
+    if(b==='leggings'&&h==='heels') add('style',-8,'Leggings with heels do not belong together.');
+    if(b==='leggings'&&(t==='hoodie'||t==='crop'||t==='tee')) add('style',3,'Leggings with a relaxed top are comfortable and neat.');
+    if(fs.every(function(f){return f>=7;})) add('style',10,'Sharp and fully formal from top to toe.');
+    if(cS.id==='white'&&(h==='sneakers'||h==='running')) add('style',4,'White sneakers go with almost everything.');
+
+    var cs=pieces.map(function(p){return p.c;});
+    var ids=cs.map(function(c){return c.id;});
+    var brights=cs.filter(function(c){return c.t==='b';});
+    var uniq={};brights.forEach(function(c){uniq[c.id]=1;});
+    var ub=Object.keys(uniq).length;
+    var allSame=ids.every(function(i){return i===ids[0];});
+    if(allSame){
+      if(cs[0].t==='b') add('color',-4,'Head to toe in one loud color is bold, and few people pull it off.');
+      else add('color',8,'Head to toe in one neutral is a reliable look.');
+    }else{
+      var clashBright=false;
+      CLASH.forEach(function(c){
+        if(ids.indexOf(c[0])>-1&&ids.indexOf(c[1])>-1){
+          add('color',-c[2],c[3]);
+          if(colorOf(c[0]).t==='b'&&colorOf(c[1]).t==='b')clashBright=true;
+        }
+      });
+      var n=brights.length;
+      if(n===0) add('color',10,'The palette is all neutrals and earth tones, so nothing fights.');
+      else if(n===1) add('color',10,'One color pop on top of neutrals is the easy way to add interest.');
+      else if(n===2){
+        if(ub===1) add('color',6,'The repeated accent color ties the outfit together.');
+        else if(!clashBright) add('color',-8,'Two different loud colors compete for attention.');
+      }else{
+        if(ub===2) add('color',-14,'Three loud pieces in two colors is too much going on.');
+        else add('color',-22,'Three different loud colors at once is too much.');
+      }
+      var earth=cs.filter(function(c){return c.t==='e';}).length;
+      if(earth>=2&&n===0) add('color',4,'Earth tones sit well together.');
+      if(!isDress){
+        if(cT.id===cB.id&&cT.t!=='b') add('color',5,'A matching top and bottom makes one long line, and the shoes break it up.');
+        if(cT.id!==cB.id){
+          var dl=Math.abs(lum(cT.hex)-lum(cB.hex));
+          if(dl<.1) add('color',-4,'The top and bottoms are too close in tone, so they blend together.');
+          else if(dl>.45) add('color',5,'Strong light and dark contrast between top and bottoms.');
+        }
+        if(ids[2]===ids[0]||ids[2]===ids[1]) add('color',3,'The shoes pick up a color from the rest of the outfit.');
+      }
+    }
+
+    var ex=s.extra||{item:'none',color:'black'},exC=colorOf(ex.color);
+    if(ex.item==='cap'){
+      if(avgF>=6) add('style',-8,'A cap looks off with a dressy outfit.');
+      else add('style',3,'A cap suits a casual look.');
+    }
+    if(ex.item==='shades') add('style',3,'Sunglasses add polish.');
+    if(ex.item==='bag'&&avgF>=3) add('style',3,'A bag finishes the outfit.');
+    if(ex.item==='watch') add('style',avgF>=5?4:2,avgF>=5?'A watch finishes a smarter outfit.':'A watch is a small, clean detail.');
+    if(ex.item!=='none'){
+      if(exC.id===cS.id) add('color',4,'The accessory matches the shoes.');
+      else if(exC.t==='b'&&ids.indexOf(exC.id)<0&&brights.length>=1) add('color',-4,'The accessory adds another loud color.');
+    }
+
+    var occ=s.occ||'casual';
+    if(occ==='gym'){
+      if(sporty>=3) add('occ',14,'Dressed for a workout from head to toe.');
+      else if(sporty===2) add('occ',8,'Mostly athletic pieces, which suits a workout.');
+      else if(sporty===1) add('occ',-4,'Only one athletic piece. Add more for a workout.');
+      else add('occ',-16,'Nothing here is built for exercise.');
+      if(h==='running'||h==='sneakers') add('occ',4,'Proper shoes for training.');
+      else add('occ',-10,'These shoes are not for training.');
+    }else{
+      var r=RANGES[occ];
+      if(avgF>=r[0]&&avgF<=r[1]) add('occ',8,'The dress level suits '+r[2]+'.');
+      else if(avgF<r[0]) add('occ',-Math.min(18,Math.round((r[0]-avgF)*5)),'Too casual for '+r[2]+'.');
+      else add('occ',-Math.min(18,Math.round((avgF-r[1])*5)),'Too dressy for '+r[2]+'.');
+      if(occ==='work'&&(h==='slides'||h==='sandals')) add('occ',-10,'Open shoes rarely pass at work.');
+      if(occ==='date'&&h==='running') add('occ',-6,'Running shoes do not read as date night.');
+      if(occ==='party'&&brights.length>=1&&!allSame) add('occ',4,'A little color suits a party.');
+    }
+
+    score=Math.max(4,Math.min(98,Math.round(score)));
+    var subs={style:0,color:0,occ:0};
+    notes.forEach(function(n){subs[n.cat]+=n.pts;});
+    notes.sort(function(a,b){return a.pts-b.pts;});
+    return {score:score,notes:notes,subs:subs};
+  }
+
+  function tier(sc){
+    if(sc>=90) return {grade:'A+',word:'Certified fit',cls:'good',quip:'Wear it out. Nothing here needs changing.'};
+    if(sc>=80) return {grade:'A',word:'Strong fit',cls:'good',quip:'This works. A small tweak would only be a bonus.'};
+    if(sc>=68) return {grade:'B',word:'Solid',cls:'good',quip:'Nothing is wrong, but it plays it safe or has one weak spot.'};
+    if(sc>=54) return {grade:'C',word:'Passable',cls:'mid',quip:'You can leave the house, but one piece is holding it back.'};
+    if(sc>=38) return {grade:'D',word:'Shaky',cls:'mid',quip:'Several things disagree. The notes below say which.'};
+    return {grade:'F',word:'Rethink it',cls:'bad',quip:'This one needs a restart. Try a preset or a suggested swap.'};
+  }
+
+  /* ---------- the mannequin ---------- */
+  var BUILD={
+    m:{dx:0,armX:50,armW:20,sL:70,sR:170,wL:70,wR:170,hL:70,hR:170,legX:80,legW:30,hipX:70,hipW:100,waistX:70,waistW:100},
+    f:{dx:6,armX:56,armW:18,sL:76,sR:164,wL:84,wR:156,hL:75,hR:165,legX:82,legW:28,hipX:72,hipW:96,waistX:76,waistW:88}
+  };
+  function bodyPath(B,hem){
+    var short=hem<=160,xl=short?B.wL:B.hL,xr=short?B.wR:B.hR;
+    return 'M'+B.sL+' 90 Q'+(B.sL+2)+' 82 92 80 Q120 94 148 80 Q'+(B.sR-2)+' 82 '+B.sR+' 90 L'+B.wR+' 148 L'+xr+' '+hem+' L'+xl+' '+hem+' L'+B.wL+' 148 Z';
+  }
+  var TANK_M='M84 84 L100 80 Q120 106 140 80 L156 84 L160 112 Q154 126 162 140 L164 206 L76 206 L78 140 Q86 126 80 112 Z';
+  var TANK_F='M90 84 L102 80 Q120 106 138 80 L150 84 L154 112 Q150 126 156 140 L160 206 L80 206 L84 140 Q90 126 86 112 Z';
+  var DRESS='M90 84 L102 80 Q120 106 138 80 L150 84 L154 112 Q150 126 156 140 L158 168 L178 298 L62 298 L82 168 L84 140 Q90 126 86 112 Z';
+
+  function figureInner(s){
+    var g=s.g==='f'?'f':'m',B=BUILD[g],sk=SKINS[s.skin]||SKINS[2];
+    var top=colorOf(s.top.color).hex,bot=colorOf(s.bottom.color).hex,sh=colorOf(s.shoes.color).hex;
+    var ex=s.extra||{item:'none',color:'black'},exHex=colorOf(ex.color).hex;
+    var isDress=s.top.item==='dress';
+    var M=function(inner){return '<g>'+inner+'</g><g transform="translate(240 0) scale(-1 1)">'+inner+'</g>';};
+    var o='<ellipse cx="120" cy="388" rx="78" ry="6" fill="rgba(0,0,0,.16)"/>';
+    if(g==='f') o+='<path d="M94 30 Q91 4 120 5 Q149 4 146 30 L152 84 Q120 96 88 84 Z" fill="#2a211c"/>';
+    o+=M('<rect x="'+B.armX+'" y="88" width="'+B.armW+'" height="128" rx="9" class="ol" fill="'+sk+'"/>');
+    o+=M('<rect x="'+B.legX+'" y="248" width="'+B.legW+'" height="114" rx="13" class="ol" fill="'+sk+'"/>');
+    o+='<rect x="110" y="58" width="20" height="32" fill="'+sk+'"/>';
+    o+='<circle cx="120" cy="38" r="24" class="ol" fill="'+sk+'"/>';
+    if(g==='f') o+='<path d="M94 38 Q92 8 120 8 Q148 8 146 38 Q140 20 124 17 Q104 20 94 38Z" fill="#2a211c"/>';
+    else o+='<path d="M96 36 Q95 10 120 10 Q145 10 144 36 Q137 22 120 22 Q103 22 96 36Z" fill="#2a211c"/>';
+    o+='<circle cx="111" cy="41" r="1.9" fill="#2a211c"/><circle cx="129" cy="41" r="1.9" fill="#2a211c"/>';
+    o+='<path d="M113 50 Q120 55 127 50" fill="none" stroke="'+(g==='f'?'#a64a52':'#2a211c')+'" stroke-width="1.8" stroke-linecap="round"/>';
+    if(ex.item==='cap'){
+      o+='<path d="M96 30 Q95 5 120 5 Q145 5 144 30 Z" class="ol" fill="'+exHex+'"/>';
+      o+='<path d="M97 29 Q76 29 74 35 L99 35 Z" class="ol" fill="'+shade(exHex,.22)+'"/>';
+    }
+    if(ex.item==='shades'){
+      o+='<rect x="102" y="36" width="16" height="10" rx="4" class="ol" fill="'+exHex+'"/><rect x="122" y="36" width="16" height="10" rx="4" class="ol" fill="'+exHex+'"/><path d="M118 40 L122 40" stroke="'+exHex+'" stroke-width="2"/>';
+    }
+    o+=shirtSVG(s.top.item,top,M,B,g,sk);
+    if(!isDress) o+=pantsSVG(s.bottom.item,bot,M,B,g);
+    if(ex.item==='bag'){
+      o+='<path d="M84 90 Q60 130 58 190" fill="none" stroke="'+exHex+'" stroke-width="3.5" stroke-linecap="round"/>';
+      o+='<rect x="40" y="186" width="38" height="32" rx="7" class="ol" fill="'+exHex+'"/><path d="M40 197 Q59 210 78 197" fill="none" stroke="'+shade(exHex,.3)+'" stroke-width="1.8"/>';
+    }
+    o+=shoesSVG(s.shoes.item,sh,sk,M);
+    if(ex.item==='watch'){
+      var cx=240-(B.armX+B.armW/2);
+      o+='<rect x="'+(cx-10)+'" y="199" width="20" height="9" rx="3" class="ol" fill="'+exHex+'"/><circle cx="'+cx+'" cy="203.5" r="3.8" fill="'+contrastOf(exHex)+'" stroke="var(--outline)" stroke-width="1"/>';
+    }
+    return o;
+  }
+  function figureSVG(s,extra){
+    return '<svg viewBox="0 0 240 400" '+(extra||'')+' aria-hidden="true">'+figureInner(s)+'</svg>';
+  }
+
+  function shirtSVG(type,fill,M,B,g,sk){
+    var d=shade(fill,.28),c=contrastOf(fill),o='';
+    var tr=function(p){return M('<g transform="translate('+B.dx+' 0)">'+p+'</g>');};
+    var shortSl='<path d="M72 84 L50 94 Q45 112 51 132 L72 124 Z" class="ol" fill="'+fill+'"/>';
+    var longSl='<path d="M72 84 L50 94 Q43 150 47 210 L68 210 L72 130 Z" class="ol" fill="'+fill+'"/><path d="M47 198 L68 198" stroke="'+d+'" stroke-width="3" fill="none"/>';
+    var tankLike=(type==='tank'||type==='jersey');
+    if(tankLike) o+='<rect x="'+B.sL+'" y="84" width="'+(B.sR-B.sL)+'" height="30" rx="14" class="ol" fill="'+sk+'"/>';
+    if(type==='crop') o+='<rect x="'+B.wL+'" y="140" width="'+(B.wR-B.wL)+'" height="66" class="ol" fill="'+sk+'"/>';
+    if(type==='tee'||type==='graphic'||type==='polo'||type==='crop'||type==='blouse') o+=tr(shortSl);
+    if(type==='hoodie'||type==='button'||type==='sweater'||type==='blazer') o+=tr(longSl);
+
+    if(type==='dress'){
+      o+='<rect x="'+B.sL+'" y="84" width="'+(B.sR-B.sL)+'" height="30" rx="14" class="ol" fill="'+sk+'"/>';
+      o+='<path d="'+DRESS+'" class="ol" fill="'+fill+'"/>';
+      o+='<path d="M82 168 L158 168" stroke="'+d+'" stroke-width="2.4" fill="none"/>';
+      o+='<path d="M102 80 Q120 106 138 80" fill="none" stroke="'+d+'" stroke-width="2.4"/>';
+      o+='<path d="M104 176 L96 296 M120 176 L120 298 M136 176 L144 296" stroke="'+d+'" stroke-width="1.2" opacity=".5" fill="none"/>';
+      return o;
+    }
+    if(tankLike) o+='<path d="'+(g==='f'?TANK_F:TANK_M)+'" class="ol" fill="'+fill+'"/>';
+    else o+='<path d="'+bodyPath(B,type==='crop'?152:206)+'" class="ol" fill="'+fill+'"/>';
+
+    if(type==='tee'||type==='crop') o+='<path d="M98 82 Q120 100 142 82" fill="none" stroke="'+d+'" stroke-width="2.4"/>';
+    if(type==='graphic'){
+      o+='<path d="M98 82 Q120 100 142 82" fill="none" stroke="'+d+'" stroke-width="2.4"/>';
+      o+='<circle cx="120" cy="140" r="19" fill="'+c+'" opacity=".92"/><circle cx="120" cy="140" r="11" fill="none" stroke="'+fill+'" stroke-width="3"/><rect x="116" y="130" width="8" height="20" rx="2" fill="'+fill+'"/>';
+    }
+    if(type==='polo'){
+      o+=M('<path d="M101 80 L119 99 L109 105 L93 88 Z" class="ol" fill="'+shade(fill,.14)+'"/>');
+      o+='<path d="M120 99 L120 132" stroke="'+d+'" stroke-width="2"/><circle cx="120" cy="109" r="2" fill="'+d+'"/><circle cx="120" cy="121" r="2" fill="'+d+'"/>';
+    }
+    if(type==='button'){
+      o+=M('<path d="M101 80 L119 99 L108 106 L92 88 Z" class="ol" fill="'+shade(fill,.14)+'"/>');
+      o+='<path d="M120 99 L120 206" stroke="'+d+'" stroke-width="2"/>';
+      [114,136,158,180].forEach(function(y){o+='<circle cx="120" cy="'+y+'" r="2.2" fill="'+d+'"/>';});
+      if(g==='m') o+='<rect x="86" y="122" width="20" height="24" rx="2" fill="none" stroke="'+d+'" stroke-width="1.6"/>';
+    }
+    if(type==='blouse'){
+      o+='<path d="M102 80 L120 112 L138 80 Z" class="ol" fill="'+sk+'"/>';
+      o+='<path d="M102 80 L120 112 L138 80" fill="none" stroke="'+d+'" stroke-width="2"/>';
+      o+='<path d="M96 150 Q120 158 144 150" fill="none" stroke="'+d+'" stroke-width="1.6" opacity=".7"/>';
+    }
+    if(type==='sweater'){
+      o+='<path d="M98 82 Q120 102 142 82" fill="none" stroke="'+d+'" stroke-width="5" stroke-linecap="round"/>';
+      o+='<rect x="'+B.hL+'" y="197" width="'+(B.hR-B.hL)+'" height="9" fill="'+d+'" opacity=".55"/>';
+      o+='<path d="M84 150 L84 190 M100 150 L100 190 M140 150 L140 190 M156 150 L156 190" stroke="'+d+'" stroke-width="1" opacity=".35"/>';
+    }
+    if(type==='hoodie'){
+      o+='<path d="M90 82 Q120 114 150 82 Q150 70 120 70 Q90 70 90 82Z" class="ol" fill="'+fill+'"/>';
+      o+='<path d="M102 81 Q120 100 138 81 Q130 75 120 75 Q110 75 102 81Z" fill="'+d+'" opacity=".55"/>';
+      o+='<path d="M112 98 L110 128 M128 98 L130 128" stroke="'+d+'" stroke-width="2.2" stroke-linecap="round" fill="none"/>';
+      o+='<path d="M88 166 L152 166 L158 198 L82 198 Z" fill="none" stroke="'+d+'" stroke-width="1.8"/>';
+    }
+    if(type==='blazer'){
+      o+='<path d="M102 80 L120 126 L138 80 Z" fill="#f1f1ec" stroke="var(--outline)" stroke-width="1"/>';
+      o+=M('<path d="M100 80 L120 128 L106 146 L86 102 Z" class="ol" fill="'+shade(fill,.16)+'"/>');
+      o+='<path d="M120 128 L120 206" stroke="'+d+'" stroke-width="2"/><circle cx="120" cy="160" r="2.4" fill="'+d+'"/><circle cx="120" cy="182" r="2.4" fill="'+d+'"/>';
+    }
+    if(type==='jersey'){
+      o+='<path d="M100 80 Q120 106 140 80" fill="none" stroke="'+c+'" stroke-width="4"/>';
+      o+='<rect x="'+(B.hL+2)+'" y="198" width="'+(B.hR-B.hL-4)+'" height="6" fill="'+c+'" opacity=".9"/>';
+      o+='<text class="num" x="120" y="168" text-anchor="middle" font-size="52" fill="'+c+'">23</text>';
+    }
+    return o;
+  }
+
+  function pantsSVG(type,fill,M,B,g){
+    var d=shade(fill,.25),c=contrastOf(fill),o='',hem=354,skirt=(type==='miniskirt'||type==='midiskirt');
+    if(!skirt) o+='<rect x="'+B.hipX+'" y="200" width="'+B.hipW+'" height="42" rx="6" class="ol" fill="'+fill+'"/>';
+    if(type==='jeans'){
+      o+=M('<path d="M70 206 L120 206 L117 354 L73 354 Z" class="ol" fill="'+fill+'"/><path d="M75 212 Q80 234 98 226" fill="none" stroke="'+d+'" stroke-width="1.6" stroke-dasharray="3 2"/>');
+    }else if(type==='chinos'){
+      o+=M('<path d="M70 206 L120 206 L114 354 L77 354 Z" class="ol" fill="'+fill+'"/>');
+    }else if(type==='slacks'){
+      o+=M('<path d="M70 206 L120 206 L116 354 L74 354 Z" class="ol" fill="'+fill+'"/><path d="M95 220 L95 352" stroke="'+d+'" stroke-width="1.4" fill="none"/>');
+    }else if(type==='cargo'){
+      o+=M('<path d="M67 206 L120 206 L119 354 L66 354 Z" class="ol" fill="'+fill+'"/><rect x="67" y="262" width="20" height="36" rx="2" fill="none" stroke="'+d+'" stroke-width="1.6"/><path d="M67 271 L87 271" stroke="'+d+'" stroke-width="1.6"/>');
+    }else if(type==='jogger'){
+      hem=352;
+      o+=M('<path d="M70 206 L120 206 L112 338 L78 338 Z" class="ol" fill="'+fill+'"/><rect x="76" y="336" width="38" height="16" rx="6" class="ol" fill="'+d+'"/>');
+    }else if(type==='leggings'){
+      o+=M('<path d="M72 206 L120 206 L113 354 L82 354 Z" class="ol" fill="'+fill+'"/><path d="M86 230 L92 340" stroke="'+d+'" stroke-width="1.2" opacity=".45" fill="none"/>');
+    }else if(type==='shorts'){
+      hem=276;
+      o+=M('<path d="M70 206 L120 206 L121 276 L69 276 Z" class="ol" fill="'+fill+'"/>');
+    }else if(type==='bball'){
+      hem=300;
+      o+=M('<path d="M67 206 L120 206 L122 300 L65 300 Z" class="ol" fill="'+fill+'"/><path d="M70 212 L68 298" stroke="'+c+'" stroke-width="3" fill="none"/>');
+    }else if(type==='miniskirt'){
+      o+='<path d="M78 200 L162 200 L174 264 L66 264 Z" class="ol" fill="'+fill+'"/>';
+      o+='<path d="M100 208 L94 262 M120 208 L120 264 M140 208 L146 262" stroke="'+d+'" stroke-width="1.1" opacity=".45" fill="none"/>';
+    }else{
+      o+='<path d="M78 200 L162 200 L180 314 L60 314 Z" class="ol" fill="'+fill+'"/>';
+      o+='<path d="M98 208 L86 312 M120 208 L120 314 M142 208 L154 312" stroke="'+d+'" stroke-width="1.3" opacity=".5" fill="none"/>';
+    }
+    o+='<rect x="'+B.waistX+'" y="198" width="'+B.waistW+'" height="9" rx="3" class="ol" fill="'+d+'"/>';
+    if(!skirt) o+='<path d="M120 240 L120 '+hem+'" stroke="var(--outline)" stroke-width="1.2" fill="none"/>';
+    return o;
+  }
+
+  function shoesSVG(type,fill,sk,M){
+    var d=shade(fill,.3),c=contrastOf(fill),dk=shade(fill,.55),o='';
+    if(type==='sneakers'){
+      o+=M('<path d="M72 344 L116 344 L118 368 L58 368 Q54 368 55 362 Q58 356 70 354 Z" class="ol" fill="'+fill+'"/><rect x="54" y="366" width="66" height="9" rx="4" class="ol" fill="#f5f4ef"/><path d="M82 352 L96 350 M84 358 L98 356" stroke="'+d+'" stroke-width="1.8" fill="none"/>');
+    }else if(type==='running'){
+      o+=M('<path d="M72 344 L116 344 L118 366 L58 366 Q54 366 55 360 Q58 354 70 352 Z" class="ol" fill="'+fill+'"/><rect x="52" y="364" width="68" height="12" rx="6" class="ol" fill="#f5f4ef"/><path d="M78 360 Q98 350 114 358" stroke="'+c+'" stroke-width="3.2" fill="none" stroke-linecap="round"/>');
+    }else if(type==='boots'){
+      o+=M('<path d="M71 328 L117 328 L119 366 L60 366 Q56 366 57 360 Q60 354 71 352 Z" class="ol" fill="'+fill+'"/><rect x="56" y="364" width="64" height="11" rx="3" class="ol" fill="'+dk+'"/><path d="M71 336 L117 336" stroke="'+d+'" stroke-width="2" fill="none"/>');
+    }else if(type==='loafers'){
+      o+=M('<path d="M71 352 L116 352 L118 368 L58 368 Q54 368 55 363 Q60 356 71 356 Z" class="ol" fill="'+fill+'"/><rect x="54" y="367" width="66" height="6" rx="2" class="ol" fill="'+dk+'"/><rect x="80" y="356" width="18" height="4" rx="1" fill="'+d+'"/>');
+    }else if(type==='oxfords'){
+      o+=M('<path d="M72 350 L116 350 L118 368 L50 368 Q54 360 72 355 Z" class="ol" fill="'+fill+'"/><rect x="50" y="367" width="70" height="6" rx="2" class="ol" fill="'+dk+'"/><rect x="100" y="372" width="16" height="4" fill="'+dk+'"/><path d="M76 356 L90 354" stroke="'+d+'" stroke-width="1.6" fill="none"/>');
+    }else if(type==='heels'){
+      o+=M('<path d="M72 344 L114 344 L116 360 L112 366 L58 364 Q54 362 58 357 Q66 352 72 350 Z" class="ol" fill="'+fill+'"/><path d="M56 364 L112 366" stroke="'+dk+'" stroke-width="2" fill="none"/><path d="M105 366 L116 366 L113 378 L109 378 Z" class="ol" fill="'+dk+'"/>');
+    }else if(type==='flats'){
+      o+=M('<path d="M70 354 L116 354 L118 368 L58 368 Q54 367 56 363 Q61 357 70 357 Z" class="ol" fill="'+fill+'"/><rect x="55" y="367" width="64" height="4" rx="2" fill="'+dk+'"/><circle cx="66" cy="361" r="2.6" fill="'+d+'"/>');
+    }else if(type==='slides'){
+      o+=M('<path d="M72 352 L116 352 L118 368 L58 368 Q54 366 56 362 Q62 356 72 354 Z" class="ol" fill="'+sk+'"/><rect x="54" y="368" width="68" height="8" rx="4" class="ol" fill="'+fill+'"/><path d="M68 356 Q92 344 116 356 L116 364 Q92 354 70 364 Z" class="ol" fill="'+fill+'"/>');
+    }else{
+      o+=M('<path d="M72 352 L116 352 L118 368 L58 368 Q54 366 56 362 Q62 356 72 354 Z" class="ol" fill="'+sk+'"/><rect x="54" y="368" width="68" height="7" rx="3.5" class="ol" fill="'+fill+'"/><path d="M70 356 L116 356 M70 363 L116 363 M72 345 L116 345" stroke="'+fill+'" stroke-width="3" fill="none"/>');
+    }
+    return o;
+  }
+
+  /* ---------- state ---------- */
+  function adapt(st){
+    CORE.forEach(function(k){
+      var list=avail(k,st.g);
+      if(!list.some(function(i){return i.id===st[k].item;})){
+        var cur=SLOTS[k].items.filter(function(i){return i.id===st[k].item;})[0];
+        var f=cur?cur.f:3,best=list[0];
+        list.forEach(function(i){if(Math.abs(i.f-f)<Math.abs(best.f-f))best=i;});
+        st[k].item=best.id;
+      }
+    });
+  }
+  function sanitize(st){
+    var out={g:st&&st.g==='f'?'f':'m',occ:'casual',skin:2};
+    if(st&&OCCS.some(function(o){return o.id===st.occ;}))out.occ=st.occ;
+    if(st&&st.skin>=0&&st.skin<SKINS.length)out.skin=st.skin;
+    ALLK.forEach(function(k){
+      var src=st&&st[k]?st[k]:{};
+      var it=byId(SLOTS[k].items,src.item);
+      var col=colorOf(src.color);
+      out[k]={item:src.item&&it.id===src.item?it.id:(k==='extra'?'none':SLOTS[k].items[0].id),color:src.color&&col.id===src.color?col.id:'black'};
+    });
+    adapt(out);
+    return out;
+  }
+  var state=sanitize({
+    g:'m',occ:'casual',skin:2,
+    top:{item:'polo',color:'navy'},bottom:{item:'chinos',color:'beige'},shoes:{item:'loafers',color:'brown'},extra:{item:'none',color:'black'}
+  });
+  try{
+    var saved=JSON.parse(localStorage.getItem('fitcheck:v2')||'null');
+    if(saved)state=sanitize(saved);
+  }catch(e){}
+  var book=[];
+  try{
+    var bk=JSON.parse(localStorage.getItem('fitcheck:book')||'[]');
+    if(Array.isArray(bk))book=bk.slice(0,8).map(function(b){return {state:sanitize(b.state),score:b.score};});
+  }catch(e){}
+  function save(){
+    try{localStorage.setItem('fitcheck:v2',JSON.stringify(state));}catch(e){}
+  }
+  function saveBook(){
+    try{localStorage.setItem('fitcheck:book',JSON.stringify(book));}catch(e){}
+  }
+
+  /* ---------- controls ---------- */
+  var slotsEl=document.getElementById('slots');
+  function buildSlots(){
+    var html='';
+    ALLK.forEach(function(k){
+      html+='<section class="slot" id="slot-'+k+'" aria-label="'+SLOTS[k].label+'"><div class="slot-head"><h3>'+SLOTS[k].label+'</h3><span class="mono" id="cur-'+k+'"></span></div>';
+      html+='<div class="slot-body" id="body-'+k+'"><div class="chips" role="group" aria-label="'+SLOTS[k].label+' style">';
+      avail(k,state.g).forEach(function(it){html+='<button type="button" class="chip" data-slot="'+k+'" data-item="'+it.id+'" aria-pressed="false">'+it.name+'</button>';});
+      html+='</div><div class="swatches" id="sw-'+k+'" role="group" aria-label="'+SLOTS[k].label+' color">';
+      COLORS.forEach(function(c){html+='<button type="button" class="swatch" data-slot="'+k+'" data-color="'+c.id+'" aria-label="'+c.name+'" title="'+c.name+'" aria-pressed="false" style="background:'+c.hex+'"></button>';});
+      html+='</div></div></section>';
+    });
+    slotsEl.innerHTML=html;
+  }
+  slotsEl.addEventListener('click',function(e){
+    var b=e.target.closest('button');if(!b)return;
+    var k=b.getAttribute('data-slot');if(!k)return;
+    if(b.hasAttribute('data-item'))state[k].item=b.getAttribute('data-item');
+    if(b.hasAttribute('data-color'))state[k].color=b.getAttribute('data-color');
+    setMsg('');
+    render();
+  });
+
+  var genderEl=document.getElementById('genderChips');
+  [{id:'m',name:'Men'},{id:'f',name:'Women'}].forEach(function(o){
+    var b=document.createElement('button');b.type='button';b.className='chip';b.textContent=o.name;b.setAttribute('data-g',o.id);b.setAttribute('aria-pressed','false');
+    genderEl.appendChild(b);
+  });
+  genderEl.addEventListener('click',function(e){
+    var b=e.target.closest('button');if(!b)return;
+    var g=b.getAttribute('data-g');if(g===state.g)return;
+    state.g=g;adapt(state);setMsg('');
+    buildSlots();buildPresets();render();
+  });
+  var occEl=document.getElementById('occChips');
+  OCCS.forEach(function(o){
+    var b=document.createElement('button');b.type='button';b.className='chip';b.textContent=o.name;b.setAttribute('data-occ',o.id);b.setAttribute('aria-pressed','false');
+    occEl.appendChild(b);
+  });
+  occEl.addEventListener('click',function(e){
+    var b=e.target.closest('button');if(!b)return;
+    state.occ=b.getAttribute('data-occ');setMsg('');render();
+  });
+
+  var skinsEl=document.getElementById('skins');
+  SKINS.forEach(function(hex,i){
+    var b=document.createElement('button');b.type='button';b.className='swatch';b.style.background=hex;
+    b.setAttribute('aria-label','Skin tone '+(i+1));b.setAttribute('data-skin',i);b.setAttribute('aria-pressed','false');
+    skinsEl.appendChild(b);
+  });
+  skinsEl.addEventListener('click',function(e){
+    var b=e.target.closest('button');if(!b)return;
+    state.skin=parseInt(b.getAttribute('data-skin'),10);render();
+  });
+
+  var presetsEl=document.getElementById('presets');
+  function buildPresets(){
+    presetsEl.innerHTML='<span class="lbl mono">Start from</span>';
+    PRESETS.filter(function(p){return p.g===state.g;}).forEach(function(p){
+      var b=document.createElement('button');b.type='button';b.className='chip';b.textContent=p.name;
+      b.addEventListener('click',function(){
+        state.occ=p.occ;
+        CORE.forEach(function(k){state[k]={item:p[k][0],color:p[k][1]};});
+        state.extra={item:p.extra[0],color:p.extra[1]};
+        setMsg('');render();
+      });
+      presetsEl.appendChild(b);
+    });
+  }
+
+  function setMsg(t){document.getElementById('swapMsg').textContent=t;}
+  function pick(a){return a[Math.floor(Math.random()*a.length)];}
+  document.getElementById('randomBtn').addEventListener('click',function(){
+    CORE.forEach(function(k){state[k]={item:pick(avail(k,state.g)).id,color:pick(COLORS).id};});
+    state.extra={item:pick(EXTRAS).id,color:pick(COLORS).id};
+    setMsg('');render();
+  });
+
+  function describe(k,sl){
+    if(k==='extra'&&sl.item==='none')return 'no accessory';
+    return colorOf(sl.color).name.toLowerCase()+' '+byId(SLOTS[k].items,sl.item).name.toLowerCase();
+  }
+  document.getElementById('suggestBtn').addEventListener('click',function(){
+    var base=judge(state).score,best=null,dress=state.top.item==='dress';
+    ALLK.forEach(function(k){
+      if(k==='bottom'&&dress)return;
+      avail(k,state.g).forEach(function(it){
+        COLORS.forEach(function(c){
+          if(it.id==='none'&&c.id!==state[k].color)return;
+          var ci=it.id!==state[k].item,cc=c.id!==state[k].color;
+          if(!ci&&!cc)return;
+          var cand=clone(state);cand[k]={item:it.id,color:c.id};
+          var raw=judge(cand).score,sc=raw-((ci?1:0)+(cc?1:0))*1.5;
+          if(!best||sc>best.sc)best={sc:sc,raw:raw,k:k,sl:{item:it.id,color:c.id}};
+        });
+      });
+    });
+    if(!best||best.raw<=base){
+      setMsg('No single swap beats this one. It is already about as good as this set gets.');
+      return;
+    }
+    var before=describe(best.k,state[best.k]);
+    state[best.k]=best.sl;
+    setMsg('Changed '+SLOTS[best.k].label.toLowerCase()+' from '+before+' to '+describe(best.k,best.sl)+'. Score '+base+' to '+best.raw+'.');
+    render();
+  });
+
+  document.getElementById('saveBtn').addEventListener('click',function(){
+    var res=judge(state);
+    book.unshift({state:clone(state),score:res.score});
+    if(book.length>8)book=book.slice(0,8);
+    saveBook();renderBook();
+    setMsg('Saved to your lookbook.');
+  });
+  var looksEl=document.getElementById('looks');
+  looksEl.addEventListener('click',function(e){
+    var del=e.target.closest('.look-del');
+    if(del){
+      book.splice(parseInt(del.getAttribute('data-i'),10),1);
+      saveBook();renderBook();return;
+    }
+    var ld=e.target.closest('.look-load');
+    if(ld){
+      var st=book[parseInt(ld.getAttribute('data-i'),10)];
+      if(!st)return;
+      state=sanitize(st.state);setMsg('');
+      buildSlots();buildPresets();render();
+    }
+  });
+  function renderBook(){
+    document.getElementById('bookEmpty').hidden=book.length>0;
+    var h='';
+    book.forEach(function(b,i){
+      h+='<div class="look"><button type="button" class="look-load" data-i="'+i+'" aria-label="Load saved fit, score '+b.score+'">'+figureSVG(b.state)+'<span>'+b.score+'/100</span></button>'
+       +'<button type="button" class="look-del" data-i="'+i+'" aria-label="Remove saved fit">&times;</button></div>';
+    });
+    looksEl.innerHTML=h;
+  }
+
+  /* ---------- render ---------- */
+  function render(){
+    var dress=state.top.item==='dress';
+    CORE.concat(['extra']).forEach(function(k){
+      var cur=document.getElementById('cur-'+k);
+      if(k==='bottom'&&dress)cur.textContent='Covered by the dress';
+      else cur.textContent=describe(k,state[k]);
+    });
+    document.getElementById('body-bottom').hidden=dress;
+    document.getElementById('sw-extra').hidden=state.extra.item==='none';
+
+    var all=slotsEl.querySelectorAll('button');
+    for(var i=0;i<all.length;i++){
+      var b=all[i],k=b.getAttribute('data-slot');
+      if(b.hasAttribute('data-item'))b.setAttribute('aria-pressed',String(state[k].item===b.getAttribute('data-item')));
+      if(b.hasAttribute('data-color'))b.setAttribute('aria-pressed',String(state[k].color===b.getAttribute('data-color')));
+    }
+    var gs=genderEl.querySelectorAll('button');
+    for(var a=0;a<gs.length;a++)gs[a].setAttribute('aria-pressed',String(gs[a].getAttribute('data-g')===state.g));
+    var os=occEl.querySelectorAll('button');
+    for(var c=0;c<os.length;c++)os[c].setAttribute('aria-pressed',String(os[c].getAttribute('data-occ')===state.occ));
+    var sks=skinsEl.querySelectorAll('button');
+    for(var j=0;j<sks.length;j++)sks[j].setAttribute('aria-pressed',String(parseInt(sks[j].getAttribute('data-skin'),10)===state.skin));
+
+    document.getElementById('fig').innerHTML=figureInner(state);
+
+    var res=judge(state),tr=tier(res.score);
+    document.getElementById('scoreNum').textContent=res.score;
+    var fill=document.getElementById('meterFill');
+    fill.style.width=res.score+'%';
+    fill.style.background='var(--'+(tr.cls==='good'?'good':tr.cls==='mid'?'mid':'bad')+')';
+    var gr=document.getElementById('grade');gr.textContent='GRADE '+tr.grade;gr.className='grade tier-'+tr.cls;
+    var v=document.getElementById('verdict');v.textContent=tr.word;v.className='tier-'+tr.cls;
+    document.getElementById('quip').textContent=tr.quip;
+
+    var sub='';
+    [['style','Style'],['color','Color'],['occ','Occasion']].forEach(function(p){
+      var n=res.subs[p[0]];
+      sub+='<span class="'+(n>0?'tier-good':n<0?'tier-bad':'')+'"><b>'+p[1]+'</b>'+(n>0?'+':n<0?'−':'')+Math.abs(n)+'</span>';
+    });
+    document.getElementById('subs').innerHTML=sub;
+
+    var comp='';
+    CORE.forEach(function(k){
+      if(k==='bottom'&&dress)return;
+      comp+='<div><dt>'+SLOTS[k].label+'</dt><dd>'+describe(k,state[k])+'</dd></div>';
+    });
+    if(state.extra.item!=='none')comp+='<div><dt>'+SLOTS.extra.label+'</dt><dd>'+describe('extra',state.extra)+'</dd></div>';
+    document.getElementById('comp').innerHTML=comp;
+
+    var nl='';
+    res.notes.forEach(function(n){
+      var cls=n.pts>0?'good':'bad',sign=n.pts>0?'+':'−';
+      nl+='<li><span class="pts '+cls+'">'+sign+Math.abs(n.pts)+'</span><span>'+n.text+'</span></li>';
+    });
+    document.getElementById('notes').innerHTML=nl;
+    save();
+  }
+  buildSlots();buildPresets();renderBook();render();
+})();
+</script>
+
+</body>
+</html>
